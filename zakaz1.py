@@ -21,8 +21,8 @@ BOT_TOKEN = "8535443974:AAEeleptCF1PgSKPkzXDMSoyvlC-lnFmF-s"
 
 # Каналы для подписки (без @)
 CHANNELS = [
-    "your_channel1",
-    "your_channel2",
+    "-1003694969896",
+    "-1003646046099",
 ]
 
 # Стоимость активации в звёздах
@@ -508,4 +508,5 @@ async def main():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
+
     asyncio.run(main())
