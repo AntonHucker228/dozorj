@@ -17,7 +17,7 @@ from aiogram.client.default import DefaultBotProperties
 
 # ==================== НАСТРОЙКИ ====================
 
-BOT_TOKEN = "8100551585:AAFI2zdRnkcAhgKsdeCYyfyQXwRtQCMS3NI"
+BOT_TOKEN = "8553213516:AAE71Ddi650C-LEBUwvHKzYTgaZAnsLK12I"
 
 
 
@@ -789,3 +789,4 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(main())
+
