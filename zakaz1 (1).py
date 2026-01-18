@@ -17,7 +17,7 @@ from aiogram.client.default import DefaultBotProperties
 
 # ==================== НАСТРОЙКИ ====================
 
-BOT_TOKEN = "8535443974:AAEeleptCF1PgSKPkzXDMSoyvlC-lnFmF-s"
+BOT_TOKEN = "8100551585:AAFI2zdRnkcAhgKsdeCYyfyQXwRtQCMS3NI"
 
 
 
@@ -787,4 +787,5 @@ async def main():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
+
     asyncio.run(main())
