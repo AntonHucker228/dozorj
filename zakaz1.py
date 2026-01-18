@@ -21,9 +21,10 @@ BOT_TOKEN = "8535443974:AAEeleptCF1PgSKPkzXDMSoyvlC-lnFmF-s"
 
 # Каналы для подписки (без @)
 CHANNELS = [
-    "-1003694969896",
-    "-1003646046099",
+    "SmartSentinel",
+    "hhuydzaa",
 ]
+
 
 # Стоимость активации в звёздах
 ACTIVATION_COST = 1
@@ -510,3 +511,4 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(main())
+
