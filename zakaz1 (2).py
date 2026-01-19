@@ -839,7 +839,7 @@ async def top_day_handler(callback: CallbackQuery):
     top_list = get_top_referrals()
     text = "🏆 Топ дня по рефералам (24 часа):\n\n"
     for i, (user_id, referrals) in enumerate(top_list, start=1):
-        text += f"{i}. Пользователь {user_id} — {referrals} рефералов\n"
+        text += f"{i}. {username} — {referrals} рефералов\n"
     
     # Добавляем количество пользователей, прошедших проверку подписки
     subscription_count = get_subscription_count()
@@ -912,4 +912,5 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(main())
+
 
