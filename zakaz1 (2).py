@@ -842,7 +842,7 @@ async def top_day_handler(callback: CallbackQuery):
     
     # Добавляем количество пользователей, прошедших проверку подписки
     subscription_count = get_subscription_count()
-    text += f"\nКоличество пользователей, прошедших проверку подписки: {subscription_count}"
+    text += f"\nВсего пользователей: {subscription_count}"
     
     await callback.message.edit_text(text, reply_markup=get_back_keyboard())
 
@@ -911,6 +911,7 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(main())
+
 
 
 
