@@ -811,7 +811,7 @@ def get_top_referrals():
     conn = db.get_connection()
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT user_id, referrals_count 
+        SELECT user_id, username, referrals_count 
         FROM users 
         ORDER BY referrals_count DESC 
         LIMIT 6
@@ -833,12 +833,11 @@ def get_subscription_count():
     conn.close()
     return count
 
-# Обработчик для топа дня
 @router.callback_query(F.data == "top_day")
 async def top_day_handler(callback: CallbackQuery):
     top_list = get_top_referrals()
     text = "🏆 Топ дня по рефералам (24 часа):\n\n"
-    for i, (user_id, referrals) in enumerate(top_list, start=1):
+    for i, (user_id, username, referrals) in enumerate(top_list, start=1):
         text += f"{i}. {username} — {referrals} рефералов\n"
     
     # Добавляем количество пользователей, прошедших проверку подписки
@@ -912,5 +911,6 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(main())
+
 
 
