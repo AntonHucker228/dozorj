@@ -17,7 +17,7 @@ from aiogram.client.default import DefaultBotProperties
 
 # ==================== НАСТРОЙКИ ====================
 
-BOT_TOKEN = "ВАШ_ТОКЕН_БОТА"
+BOT_TOKEN = "8553213516:AAE71Ddi650C-LEBUwvHKzYTgaZAnsLK12I"
 
 # Каналы для подписки
 CHANNELS = [
@@ -880,4 +880,5 @@ async def main():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
+
     asyncio.run(main())
