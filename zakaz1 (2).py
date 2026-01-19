@@ -805,20 +805,50 @@ async def referral_link_handler(callback: CallbackQuery):
             reply_markup=get_back_keyboard()
         )
 
-# --- Топ дня ---
+
+# Функция для получения топа пользователей по рефералам
+def get_top_referrals():
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT user_id, referrals_count 
+        FROM users 
+        ORDER BY referrals_count DESC 
+        LIMIT 6
+    ''')
+    top_list = cursor.fetchall()
+    conn.close()
+    return top_list
+
+# Функция для получения количества пользователей, прошедших проверку подписки
+def get_subscription_count():
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT COUNT(*) 
+        FROM users 
+        WHERE subscription_passed = 1
+    ''')
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
+
+# Обработчик для топа дня
 @router.callback_query(F.data == "top_day")
 async def top_day_handler(callback: CallbackQuery):
-    top_list = []
-    for i in range(1, 6):
-        letters = ''.join(random.choices(string.ascii_uppercase, k=3))
-        stars = '*' * random.randint(3, 7)
-        referrals = random.randint(5, 50)
-        top_list.append(f"{i}. {letters}{stars} — {referrals} рефералов")
+    top_list = get_top_referrals()
+    text = "🏆 Топ дня по рефералам (24 часа):\n\n"
+    for i, (user_id, referrals) in enumerate(top_list, start=1):
+        text += f"{i}. Пользователь {user_id} — {referrals} рефералов\n"
     
-    text = "🏆 Топ дня по рефералам (24 часа):\n\n" + "\n".join(top_list)
-    text += "\n\n🎁 Приз сегодня: 💍"
+    # Добавляем количество пользователей, прошедших проверку подписки
+    subscription_count = get_subscription_count()
+    text += f"\nКоличество пользователей, прошедших проверку подписки: {subscription_count}"
     
     await callback.message.edit_text(text, reply_markup=get_back_keyboard())
+
+
+
 
 # --- Активация реферальной ссылки (бесплатно) ---
 @router.callback_query(F.data == "activate_referral")
@@ -882,3 +912,4 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(main())
+
