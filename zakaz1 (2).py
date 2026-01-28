@@ -843,10 +843,29 @@ async def top_day_handler(callback: CallbackQuery):
     # Добавляем количество пользователей, прошедших проверку подписки
     subscription_count = get_subscription_count()
     text += f"\nВсего пользователей: {subscription_count}"
-    
+    text += "\n\n🎁 Приз сегодня: 💍"
     await callback.message.edit_text(text, reply_markup=get_back_keyboard())
 
 
+import asyncio
+import aiocron
+from datetime import datetime
+
+# Функция для сброса топа
+async def reset_top():
+    # Здесь можно добавить логику для сброса данных в базе данных
+    # Например, обновить поле referrals_count для всех пользователей до 0
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET referrals_count = 0")
+    conn.commit()
+    conn.close()
+    print("Топ сброшен в", datetime.now())
+
+# Планирование задачи на сброс топа каждые 24 часа
+@aiocron.crontab('0 0 * * *')  # Запускается каждый день в полночь
+async def schedule_reset_top():
+    await reset_top()
 
 
 # --- Активация реферальной ссылки (бесплатно) ---
@@ -911,7 +930,6 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(main())
-
 
 
 
