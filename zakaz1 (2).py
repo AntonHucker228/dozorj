@@ -848,8 +848,7 @@ async def top_day_handler(callback: CallbackQuery):
 
 
 import asyncio
-import aiocron
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Функция для сброса топа
 async def reset_top():
@@ -862,10 +861,14 @@ async def reset_top():
     conn.close()
     print("Топ сброшен в", datetime.now())
 
-# Планирование задачи на сброс топа каждые 24 часа
-@aiocron.crontab('0 0 * * *')  # Запускается каждый день в полночь
+# Функция для планирования сброса топа каждые 24 часа
 async def schedule_reset_top():
-    await reset_top()
+    while True:
+        # Ждем до следующего дня в полночь
+        next_midnight = datetime.combine(datetime.now().date() + timedelta(days=1), datetime.min.time())
+        await asyncio.sleep((next_midnight - datetime.now()).total_seconds())
+        await reset_top()
+
 
 
 # --- Активация реферальной ссылки (бесплатно) ---
@@ -926,6 +929,8 @@ async def main():
     await bot.delete_webhook(drop_pending_updates=True)
     print("✅ Бот запущен!")
     await dp.start_polling(bot)
+
+    asyncio.run(schedule_reset_top())
 
 if __name__ == "__main__":
 
