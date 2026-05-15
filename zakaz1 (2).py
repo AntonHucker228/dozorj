@@ -477,15 +477,15 @@ router = Router()
 
 user_referrers = {}
 # _ _ _ Покупка подарка _ _ _
-@router.callback(F.data == "for_10")
-async def gifts_for_10(callback: CallbackQuery):
+@router.callback_query(F.data == "for_10")
+async def gifts_for_10(callback_query: CallbackQuery):
 
     await Message.edit_text("Здесь вы можете приобрести подарки 🧸/💝 всего за 10 звезд⭐\n\nВыберите подарок, а затем проведите оплату!", reply_markup=choise_gift())
     
 
-@router.callback(F.data == "bear_gift")
-async def pay_gifts_handler(callback: CallbackQuery):
-    await callback.message.answer_invoice(
+@router.callback_query(F.data == "bear_gift")
+async def pay_gifts_handler(callback_query: CallbackQuery):
+    await callback_query.message.answer_invoice(
         title="⭐ Оплата подарка",
         description=f"Оплати 10⭐ и подарок скоро прилетит на акк!",
         payload="gift_pay_bear",
@@ -493,11 +493,11 @@ async def pay_gifts_handler(callback: CallbackQuery):
         
         prices=[LabeledPrice(label="Подарок 🧸", amount=GIFT_COST)]
     )
-    await callback.answer()
+    await callback_query.answer()
 
-@router.callback(F.data == "heart_gift")
-async def pay_gifts_handler(callback: CallbackQuery):
-    await callback.message.answer_invoice(
+@router.callback_query(F.data == "heart_gift")
+async def pay_gifts_handler(callback_query: CallbackQuery):
+    await callback_query.message.answer_invoice(
         title="⭐ Оплата подарка",
         description=f"Оплати 10⭐ и подарок скоро прилетит на акк!",
         payload="gift_pay_bear",
@@ -505,7 +505,7 @@ async def pay_gifts_handler(callback: CallbackQuery):
         
         prices=[LabeledPrice(label="Подарок 💝", amount=GIFT_COST)]
     )
-    await callback.answer()
+    await callback_query.answer()
 
 
 @router.pre_checkout_query()
