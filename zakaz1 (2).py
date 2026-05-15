@@ -22,7 +22,8 @@ BOT_TOKEN = "8553213516:AAE71Ddi650C-LEBUwvHKzYTgaZAnsLK12I"
 
 # Каналы для подписки
 CHANNELS = [
-    {"name": "Telegram contests", "url": "https://t.me/NFT_news_dzr", "id": "@NFT_news_dzr"}
+    {"name": "Telegram contests", "url": "https://t.me/NFT_news_dzr", "id": "@NFT_news_dzr"},
+    {"name": "Конкурсы / розыгрыши", "url": "https://t.me/channelstarstg", "id": "@channelstarstg"}
 ]
 
 # Подарки в магазине
