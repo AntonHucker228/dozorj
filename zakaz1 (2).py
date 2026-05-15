@@ -106,6 +106,15 @@ class Database:
                 status TEXT DEFAULT 'pending'
             )
         ''')
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS bought_gifts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                gift_name TEXT,
+                status TEXT DEFAULT 'pending'
+            )
+        ''')
         
         conn.commit()
         conn.close()
@@ -220,6 +229,16 @@ class Database:
             UPDATE users SET total_spent = total_spent + ?, total_purchases = total_purchases + 1
             WHERE user_id = ?
         ''', (amount, user_id))
+        conn.commit()
+        conn.close()
+
+    def update_gift_info(self, user_id: int, gift_name: str):
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            UPDATE bought_gifts SET gift_name = ?, status = "exist"
+            WHERE user_id = ?
+        ''', (gift_name, user_id))
         conn.commit()
         conn.close()
     
