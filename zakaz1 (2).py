@@ -477,13 +477,13 @@ router = Router()
 
 user_referrers = {}
 # _ _ _ Покупка подарка _ _ _
-@router.callback_query(F.data == "for_10")
+@router.callback(F.data == "for_10")
 async def gifts_for_10(callback: CallbackQuery):
 
     await Message.edit_text("Здесь вы можете приобрести подарки 🧸/💝 всего за 10 звезд⭐\n\nВыберите подарок, а затем проведите оплату!", reply_markup=choise_gift())
     
 
-@router.callback_query(F.data == "bear_gift")
+@router.callback(F.data == "bear_gift")
 async def pay_gifts_handler(callback: CallbackQuery):
     await callback.message.answer_invoice(
         title="⭐ Оплата подарка",
@@ -495,7 +495,7 @@ async def pay_gifts_handler(callback: CallbackQuery):
     )
     await callback.answer()
 
-@router.callback_query(F.data == "heart_gift")
+@router.callback(F.data == "heart_gift")
 async def pay_gifts_handler(callback: CallbackQuery):
     await callback.message.answer_invoice(
         title="⭐ Оплата подарка",
