@@ -3,15 +3,16 @@ import logging
 import sqlite3
 import random
 import string
-from datetime import datetime
+import datetime
 from typing import Optional
 
-from aiogram import Bot, Dispatcher, Router, F
+from aiogram import Bot, Dispatcher, types, F, Router
+
 from aiogram.types import (
     Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton,
     LabeledPrice, PreCheckoutQuery
 )
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 
@@ -107,13 +108,13 @@ class Database:
         ''')
 
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS bought_gifts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
-                gift_name TEXT,
-                status TEXT DEFAULT 'pending'
-            )
-        ''')
+        CREATE TABLE IF NOT EXISTS bought_gifts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        gift_name TEXT,
+        purchase_date TEXT,
+        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE -- Ссылаемся на user_id в таблице users
+    )''')
         
         conn.commit()
         conn.close()
@@ -231,16 +232,65 @@ class Database:
         conn.commit()
         conn.close()
 
-    def update_gift_info(self, user_id: int, gift_name: str):
+    # --- Методы для работы с подарками ---
+
+    def add_gift_purchase(self, user_id: int, gift_name: str):
+        """Добавляет новую запись о покупке подарка."""
+        current_datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") # Правильное использование datetime
         conn = self.get_connection()
-        cursor = conn.cursor()
-        cursor.execute('''
-            UPDATE bought_gifts SET gift_name = ?, status = "exist"
-            WHERE user_id = ?
-        ''', (gift_name, user_id))
-        conn.commit()
-        conn.close()
-    
+        if conn is None:
+            print("Failed to get connection for adding gift purchase.")
+            return
+
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO bought_gifts (user_id, gift_name, purchase_date)
+                VALUES (?, ?, ?)
+            """, (user_id, gift_name, current_datetime))
+            conn.commit()
+            print(f"Gift purchase recorded: UserID={user_id}, Gift='{gift_name}'")
+        except sqlite3.Error as e:
+            print(f"Error recording gift purchase for user {user_id}: {e}")
+            conn.rollback()
+        finally:
+            conn.close()
+
+    # --- Синхронный метод для извлечения всех покупок ---
+    def get_all_gift_purchases(self):
+            conn = self.get_connection()
+            if conn is None:
+                print("Failed to get connection for getting gift purchases.")
+                return []
+
+            try:
+                cursor = conn.cursor()
+                cursor.execute("""
+                SELECT 
+                    bg.gift_name, 
+                    u.username, -- Используем username вместо user_name
+                    u.full_name, 
+                    bg.user_id  -- Добавим user_id
+                FROM bought_gifts bg
+                JOIN users u ON bg.user_id = u.user_id -- Ссылаемся на user_id в users
+                ORDER BY bg.id DESC -- Сортируем по ID самой покупки
+            """)
+            
+                rows = cursor.fetchall()
+                columns = [description[0] for description in cursor.description]
+                purchases = [dict(zip(columns, row)) for row in rows]
+                return purchases
+            except sqlite3.Error as e:
+                print(f"Error fetching gift purchases: {e}")
+            # Здесь может быть ошибка, если 'users' не имеет столбца 'username'
+            # или если FOREIGN KEY неверный.
+                return []
+            finally:
+                conn.close()
+
+
+
+
     def spend_points(self, user_id: int, amount: int) -> bool:
         conn = self.get_connection()
         cursor = conn.cursor()
@@ -377,8 +427,8 @@ def get_back_keyboard() -> InlineKeyboardMarkup:
 
 def choise_gift() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Мишка🧸", callback_data="bear_gift")]
-        [InlineKeyboardButton(text="Сердце💝", callback_data="heart_gift")]
+        [InlineKeyboardButton(text="Мишка🧸", callback_data="bear_gift")],
+        [InlineKeyboardButton(text="Сердце💝", callback_data="heart_gift")],
         [InlineKeyboardButton(text="🔙 Вернуться в главное меню", callback_data="main_menu")]
     ])
 
@@ -480,7 +530,7 @@ user_referrers = {}
 @router.callback_query(F.data == "for_10")
 async def gifts_for_10(callback_query: CallbackQuery):
 
-    await Message.edit_text("Здесь вы можете приобрести подарки 🧸/💝 всего за 10 звезд⭐\n\nВыберите подарок, а затем проведите оплату!", reply_markup=choise_gift())
+    await callback_query.message.edit_text("Здесь вы можете приобрести подарки\n 🧸/💝'\nВсего за 10 звезд⭐\n\nВыберите подарок, а затем проведите оплату!", reply_markup=choise_gift())
     
 
 @router.callback_query(F.data == "bear_gift")
@@ -500,7 +550,7 @@ async def pay_gifts_handler(callback_query: CallbackQuery):
     await callback_query.message.answer_invoice(
         title="⭐ Оплата подарка",
         description=f"Оплати 10⭐ и подарок скоро прилетит на акк!",
-        payload="gift_pay_bear",
+        payload="gift_pay_heart",
         currency="XTR",
         
         prices=[LabeledPrice(label="Подарок 💝", amount=GIFT_COST)]
@@ -512,21 +562,68 @@ async def pay_gifts_handler(callback_query: CallbackQuery):
 async def pre_checkout_handler(pre_checkout_query: PreCheckoutQuery):
     await pre_checkout_query.answer(ok=True)
 
-@router.message(F.successful_payment)
-async def successful_payment(callback: CallbackQuery):
+@router.message(F.successful_payment) # Или напрямую с диспетчером
+async def successful_payment(message: types.Message):
     user_id = message.from_user.id
     payload = message.successful_payment.invoice_payload
     
+    gift_name = None
     
     if payload == "gift_pay_bear":
-        gift_name = "Мишка"
-        db.update_gift_info(user_id, gift_name)
+        gift_name = "Мишка 🧸"
+    elif payload == "gift_pay_heart": # Используем elif для второго условия
+        gift_name = "Сердце 💝"
 
-    if payload == "gift_pay_bear":
-        gift_name = "Сердце"
-        db.update_gift_info(user_id, gift_name)
+    if gift_name:
+        # Вызываем синхронный метод
+        db.add_gift_purchase(user_id, gift_name) 
+        await message.answer(f"✅ Оплата прошла успешно! Ваш подарок '{gift_name}' скоро будет отправлен.\nОжидайте!")
+    else:
+        # Если payload не совпал ни с одним из известных
+        await message.answer("Произошла ошибка при обработке вашего платежа. Неизвестный тип подарка.")
 
-    await callback_query.message.edit_text("Успешно, скоро подарок прийдёт на ваш аккаунт. Ожидайте!", reply_markup=get_back_keyboard())
+
+# --- Обработчик для команды /get_gift_info ---
+# @router.message(Command("get_gift_info")) # Если используешь роутеры
+@router.message(Command("get_gift_info")) # Напрямую с диспетчером
+async def get_gift_table(message: types.Message):
+    user_id = message.from_user.id # ID пользователя, который запросил информацию
+
+    # Проверяем, имеет ли пользователь права просматривать список покупок.
+    # Например, только администраторы. Если нет, то лучше выйти.
+    # В этом примере я предположу, что любой может запросить, но в реальном боте надо добавить проверку!
+    
+    purchases = db.get_all_gift_purchases()
+
+    if not purchases:
+        await message.answer("Пока никто не покупал подарки.")
+        return
+
+    response_text = "🎁 Список покупок подарков:\n\n"
+    for purchase in purchases:
+        gift_name = purchase.get('gift_name', 'Неизвестный подарок')
+        user_name = purchase.get('user_name', 'Нет юзернейма')
+        full_name = purchase.get('full_name', 'Нет полного имени')
+        purchase_date = purchase.get('purchase_date', 'Нет даты')
+
+        # Формируем ссылку на аккаунт пользователя, если ID известен
+        user_account_link = f"tg://user?id={purchase.get('user_id')}" if purchase.get('user_id') else "Без ID"
+
+        response_text += (
+            f"<b>Подарок:</b> {gift_name}\n"
+            f"<b>Купил:</b> <a href='{user_account_link}'>{user_name}</a> ({full_name})\n"
+            f"<b>Дата:</b> {purchase_date}\n"
+            f"--------------------\n"
+        )
+        
+        # Ограничение длины сообщения, если список покупок очень большой
+        if len(response_text) > 4000: # Максимум Telegram ~4096 символов
+            await message.answer(response_text)
+            response_text = "" # Сбрасываем текст для следующей порции
+            
+    if response_text: # Отправляем оставшийся текст, если он есть
+        await message.answer(response_text)
+
 
 
 
