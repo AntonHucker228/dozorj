@@ -479,7 +479,7 @@ router = Router()
 user_referrers = {}
 # _ _ _ Покупка подарка _ _ _
 @router.callback_query(F.data == "for_10")
-async def gifts_for_10(callback: CallbackQuery, message: types.Message):
+async def gifts_for_10(callback: CallbackQuery, message: Message):
     user = db.get_user(user_id)
     username = db.get_user(user_name)
     await message.edit_message("Здесь вы можете приобрести подарки 🧸/💝 всего за 10 звезд⭐\n\nВыберите подарок, а затем проведите оплату!", reply_markup=choise_gift())
