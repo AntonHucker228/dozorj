@@ -310,7 +310,7 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="🎰 Ежемесячная лотерея", callback_data="lottery")],
         [InlineKeyboardButton(text="👤 Мой профиль", callback_data="profile")],
         [InlineKeyboardButton(text="🔗 Реферальная ссылка", callback_data="referral_link")],
-        [InlineKeyboardButton(text="🏆 Топ дня", callback_data="top_day")]
+        [InlineKeyboardButton(text="🏆 Топ дня", callback_data="top_day")],
         [InlineKeyboardButton(text="🧸/💝 за 10⭐", callback_data="for_10")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
