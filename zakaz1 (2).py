@@ -561,15 +561,8 @@ async def cmd_start(message: Message):
         await show_main_menu(message)
         return
     
-    if user and user["quiz_passed"]:
-        if CHANNELS:
-            await message.answer(
-                "📢 Для продолжения подпишись на наши каналы:",
-                reply_markup=get_subscribe_keyboard()
-            )
-        else:
-            await show_main_menu(message)
-        return
+    
+    await show_main_menu(message)
     
     correct_emoji = random.choice(QUIZ_EMOJIS)
     shuffled = QUIZ_EMOJIS.copy()
@@ -593,18 +586,10 @@ async def handle_quiz_answer(callback: CallbackQuery):
     if selected == correct:
         db.set_quiz_passed(callback.from_user.id)
         
-        if CHANNELS:
-            await callback.message.edit_text(
-                "✅ Правильно!\n\n"
-                "📢 Для продолжения подпишись на наши каналы:",
-                reply_markup=get_subscribe_keyboard()
-            )
-        else:
-            await process_referral_bonus(callback.bot, callback.from_user.id, callback.from_user.first_name)
-            db.set_subscription_passed(callback.from_user.id)
-            await show_main_menu_edit(callback)
-    else:
-        await callback.answer("❌ Неправильно! Попробуй ещё раз.", show_alert=True)
+        
+    await process_referral_bonus(callback.bot, callback.from_user.id, callback.from_user.first_name)
+    db.set_subscription_passed(callback.from_user.id)
+    await show_main_menu_edit(callback)
 
 async def process_referral_bonus(bot: Bot, user_id: int, user_name: str):
     if user_id in user_referrers:
@@ -617,14 +602,7 @@ async def process_referral_bonus(bot: Bot, user_id: int, user_name: str):
         del user_referrers[user_id]
 
 # --- Проверка подписки ---
-@router.callback_query(F.data == "check_subscription")
-async def check_sub_handler(callback: CallbackQuery, bot: Bot):
-    if await check_subscription(bot, callback.from_user.id):
-        await process_referral_bonus(bot, callback.from_user.id, callback.from_user.first_name)
-        db.set_subscription_passed(callback.from_user.id)
-        await show_main_menu_edit(callback)
-    else:
-        await callback.answer("❌ Ты не подписался на все каналы!", show_alert=True)
+
 
 # --- Главное меню ---
 @router.callback_query(F.data == "main_menu")
