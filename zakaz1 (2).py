@@ -37,6 +37,7 @@ GIFTS = {
 
 # Стоимость лотереи в звёздах
 LOTTERY_COST = 30
+GIFT_COST = 10
 
 # Призы лотереи с шансами (в процентах)
 LOTTERY_PRIZES = [
@@ -356,7 +357,18 @@ def get_back_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="🔙 Вернуться в главное меню", callback_data="main_menu")]
     ])
 
-def xh
+def choise_gift() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Мишка🧸", callback_data="bear_gift")]
+        [InlineKeyboardButton(text="Сердце💝", callback_data="heart_gift")]
+        [InlineKeyboardButton(text="🔙 Вернуться в главное меню", callback_data="main_menu")]
+    ])
+
+def app_to_pay() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Перейти к оплате", callback_data="start_to_pay")]
+        [InlineKeyboardButton(text="🔙 Вернуться в главное меню", callback_data="main_menu")]
+    ])
 
 # ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 
@@ -447,13 +459,63 @@ async def notify_referrer(bot: Bot, referrer_id: int, new_user_name: str, new_po
 router = Router()
 
 user_referrers = {}
-#___кнопка gifts_to_10
-
+# _ _ _ Покупка подарка _ _ _
 @router.callback_query(F.data == "for_10")
 async def gifts_for_10(callback: CallbackQuery, message: types.Message):
     user = db.get_user(user_id)
     username = db.get_user(user_name)
-    message.edit_message("Отлично! Выберите подарок:", markup=)
+    await message.edit_message("Здесь вы можете приобрести подарки 🧸/💝 всего за 10 звезд⭐\n\nПодтвердите оплату, а затем выберите подарок!", markup=app_to_pay())
+    
+
+@router.callback_query(F.data == "for_10")
+async def pay_gifts_handler(callback: CallbackQuery):
+    await callback.message.answer_invoice(
+        title="⭐ Оплата подарка",
+        description=f"Оплати 10⭐ и выбери подарок!",
+        payload="gift_pay",
+        currency="XTR",
+        prices=[LabeledPrice(label="Подарок 💝/🧸", amount=GIFT_COST)]
+    )
+    await callback.answer()
+
+
+@router.pre_checkout_query()
+async def pre_checkout_handler(pre_checkout_query: PreCheckoutQuery):
+    await pre_checkout_query.answer(ok=True)
+
+@router.message(F.successful_payment)
+async def successful_payment_handler(message: Message):
+    user_id = message.from_user.id
+    payload = message.successful_payment.invoice_payload
+    amount = message.successful_payment.total_amount
+    
+    if payload == "gift_pay":
+        db.update_spent(user_id, amount)
+        
+        prize = spin_lottery()
+        
+        if prize:
+            db.add_lottery_win(user_id, prize["name"])
+            
+            await message.answer(
+                f"🍀 Удача!\n\n"
+                f"🎉 Поздравляем! Вы выиграли: {prize['name']}\n\n"
+                f"⏳ Дождитесь администрацию для получения приза!\n"
+                f"📩 Мы свяжемся с вами в ближайшее время.",
+                reply_markup=get_back_keyboard()
+            )
+        else:
+            await message.answer(
+                "❌ Не удача!\n\n"
+                "😔 К сожалению, в этот раз не повезло...\n"
+                "🍀 Попробуй ещё раз!",
+                reply_markup=get_lottery_keyboard()
+            )
+
+
+@router.callback_query(F.data == "bear_gift")
+async def gifts_for_10(callback: CallbackQuery, message: types.Message):
+    await message.reply(f"")
 
 # --- Команда /start ---
 @router.message(CommandStart())
