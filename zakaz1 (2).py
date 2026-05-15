@@ -292,6 +292,7 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="👤 Мой профиль", callback_data="profile")],
         [InlineKeyboardButton(text="🔗 Реферальная ссылка", callback_data="referral_link")],
         [InlineKeyboardButton(text="🏆 Топ дня", callback_data="top_day")]
+        [InlineKeyboardButton(text="🧸/💝 за 10⭐", callback_data="for_10")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -396,6 +397,9 @@ def spin_lottery() -> Optional[dict]:
             return prize
     
     return None
+
+
+async def
 
 async def notify_referrer(bot: Bot, referrer_id: int, new_user_name: str, new_points: int):
     try:
