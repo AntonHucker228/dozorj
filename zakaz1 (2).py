@@ -432,7 +432,6 @@ def spin_lottery() -> Optional[dict]:
     return None
 
 
-async def
 
 async def notify_referrer(bot: Bot, referrer_id: int, new_user_name: str, new_points: int):
     try:
