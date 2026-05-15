@@ -445,6 +445,11 @@ async def notify_referrer(bot: Bot, referrer_id: int, new_user_name: str, new_po
 router = Router()
 
 user_referrers = {}
+#___кнопка gifts_to_10
+
+@router.callback_query(F.data == "for_10")
+async def gifts_for_10(callback: CallbackQuery, message: types.Message):
+    async with sqlite3.connect()
 
 # --- Команда /start ---
 @router.message(CommandStart())
