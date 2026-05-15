@@ -531,6 +531,9 @@ async def successful_payment(message: Message):
     await message.answer("Успешно, скоро подарок прийдёт на ваш аккаунт. Ожидайте!", reply_markup=get_back_keyboard())
 
 
+
+
+
 # --- Команда /start ---
 @router.message(CommandStart())
 async def cmd_start(message: Message):
@@ -558,8 +561,15 @@ async def cmd_start(message: Message):
         await show_main_menu(message)
         return
     
-    
-    await show_main_menu(message)
+    if user and user["quiz_passed"]:
+        if CHANNELS:
+            await message.answer(
+                "📢 Для продолжения подпишись на наши каналы:",
+                reply_markup=get_subscribe_keyboard()
+            )
+        else:
+            await show_main_menu(message)
+        return
     
     correct_emoji = random.choice(QUIZ_EMOJIS)
     shuffled = QUIZ_EMOJIS.copy()
@@ -583,10 +593,18 @@ async def handle_quiz_answer(callback: CallbackQuery):
     if selected == correct:
         db.set_quiz_passed(callback.from_user.id)
         
-        
-    await process_referral_bonus(callback.bot, callback.from_user.id, callback.from_user.first_name)
-    db.set_subscription_passed(callback.from_user.id)
-    await show_main_menu_edit(callback)
+        if CHANNELS:
+            await callback.message.edit_text(
+                "✅ Правильно!\n\n"
+                "📢 Для продолжения подпишись на наши каналы:",
+                reply_markup=get_subscribe_keyboard()
+            )
+        else:
+            await process_referral_bonus(callback.bot, callback.from_user.id, callback.from_user.first_name)
+            db.set_subscription_passed(callback.from_user.id)
+            await show_main_menu_edit(callback)
+    else:
+        await callback.answer("❌ Неправильно! Попробуй ещё раз.", show_alert=True)
 
 async def process_referral_bonus(bot: Bot, user_id: int, user_name: str):
     if user_id in user_referrers:
@@ -599,7 +617,14 @@ async def process_referral_bonus(bot: Bot, user_id: int, user_name: str):
         del user_referrers[user_id]
 
 # --- Проверка подписки ---
-
+@router.callback_query(F.data == "check_subscription")
+async def check_sub_handler(callback: CallbackQuery, bot: Bot):
+    if await check_subscription(bot, callback.from_user.id):
+        await process_referral_bonus(bot, callback.from_user.id, callback.from_user.first_name)
+        db.set_subscription_passed(callback.from_user.id)
+        await show_main_menu_edit(callback)
+    else:
+        await callback.answer("❌ Ты не подписался на все каналы!", show_alert=True)
 
 # --- Главное меню ---
 @router.callback_query(F.data == "main_menu")
@@ -865,5 +890,142 @@ async def referral_link_handler(callback: CallbackQuery):
             f"💰 Баллов: {user['points']}",
             reply_markup=get_back_keyboard()
         )
+    else:
+        await callback.message.edit_text(
+            "❌ Реферальная ссылка не активирована!\n\n"
+            "Активируй её в разделе «🎁 Получить Подарок» бесплатно!",
+            reply_markup=get_back_keyboard()
+        )
+
+
+# Функция для получения топа пользователей по рефералам
+def get_top_referrals():
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT user_id, username, referrals_count 
+        FROM users 
+        ORDER BY referrals_count DESC 
+        LIMIT 6
+    ''')
+    top_list = cursor.fetchall()
+    conn.close()
+    return top_list
+
+# Функция для получения количества пользователей, прошедших проверку подписки
+def get_subscription_count():
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT COUNT(*) 
+        FROM users 
+        WHERE subscription_passed = 1
+    ''')
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
+
+@router.callback_query(F.data == "top_day")
+async def top_day_handler(callback: CallbackQuery):
+    top_list = get_top_referrals()
+    text = "🏆 Топ дня по рефералам (24 часа):\n\n"
+    for i, (user_id, username, referrals) in enumerate(top_list, start=1):
+        text += f"{i}. {username} — {referrals} рефералов\n"
+    
+    # Добавляем количество пользователей, прошедших проверку подписки
+    subscription_count = get_subscription_count()
+    text += f"\nВсего пользователей: {subscription_count}"
+    text += "\n\n🎁 Приз сегодня: 💍"
+    await callback.message.edit_text(text, reply_markup=get_back_keyboard())
+
+
+import asyncio
+from datetime import datetime, timedelta
+
+# Функция для сброса топа
+async def reset_top():
+    # Здесь можно добавить логику для сброса данных в базе данных
+    # Например, обновить поле referrals_count для всех пользователей до 0
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET referrals_count = 0")
+    conn.commit()
+    conn.close()
+    print("Топ сброшен в", datetime.now())
+
+# Функция для планирования сброса топа каждые 24 часа
+async def schedule_reset_top():
+    while True:
+        # Ждем до следующего дня в полночь
+        next_midnight = datetime.combine(datetime.now().date() + timedelta(days=1), datetime.min.time())
+        await asyncio.sleep((next_midnight - datetime.now()).total_seconds())
+        await reset_top()
+
+
+
+# --- Активация реферальной ссылки (бесплатно) ---
+@router.callback_query(F.data == "activate_referral")
+async def activate_referral_handler(callback: CallbackQuery):
+    user = db.get_user(callback.from_user.id)
+    
+    if user and user["referral_active"]:
+        await callback.answer("✅ Реферальная ссылка уже активирована!", show_alert=True)
+        return
+    
+    await callback.message.edit_text(
+        "🆓 Бесплатная активация реферальной ссылки!\n\n"
+        "📢 Для активации подпишись на все каналы ниже:",
+        reply_markup=get_activate_keyboard()
+    )
+
+# --- Проверка подписки и активация ---
+@router.callback_query(F.data == "check_and_activate")
+async def check_and_activate_handler(callback: CallbackQuery, bot: Bot):
+    user = db.get_user(callback.from_user.id)
+    
+    if user and user["referral_active"]:
+        await callback.answer("✅ Реферальная ссылка уже активирована!", show_alert=True)
+        return
+    
+    if await check_subscription(bot, callback.from_user.id):
+        db.activate_referral(callback.from_user.id)
+        
+        bot_info = await callback.bot.get_me()
+        ref_link = f"https://t.me/{bot_info.username}?start={callback.from_user.id}"
+        
+        await callback.message.edit_text(
+            f"✅ Реферальная ссылка успешно активирована!\n\n"
+            f"🔗 Твоя ссылка:\n{ref_link}\n\n"
+            f"Приглашай друзей и получай баллы!",
+            reply_markup=get_back_keyboard()
+        )
+    else:
+        await callback.answer(
+            "❌ Ты не подписался на все каналы!\n\nПодпишись и попробуй снова.",
+            show_alert=True
+        )
+
+# ==================== ЗАПУСК БОТА ====================
+
+async def main():
+    logging.basicConfig(level=logging.INFO)
+    
+    bot = Bot(
+        token=BOT_TOKEN,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+    )
+    
+    dp = Dispatcher()
+    dp.include_router(router)
+    
+    await bot.delete_webhook(drop_pending_updates=True)
+    print("✅ Бот запущен!")
+    await dp.start_polling(bot)
+
+    asyncio.run(schedule_reset_top())
+
+if __name__ == "__main__":
+
+    asyncio.run(main())
 
 
