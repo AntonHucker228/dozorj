@@ -483,17 +483,30 @@ user_referrers = {}
 async def gifts_for_10(callback: CallbackQuery, message: types.Message):
     user = db.get_user(user_id)
     username = db.get_user(user_name)
-    await message.edit_message("Здесь вы можете приобрести подарки 🧸/💝 всего за 10 звезд⭐\n\nПодтвердите оплату, а затем выберите подарок!", markup=app_to_pay())
+    await message.edit_message("Здесь вы можете приобрести подарки 🧸/💝 всего за 10 звезд⭐\n\nВыберите подарок, а затем проведите оплату!", reply_markup=choise_gift())
     
 
-@router.callback_query(F.data == "for_10")
+@router.callback_query(F.data == "bear_gift")
 async def pay_gifts_handler(callback: CallbackQuery):
     await callback.message.answer_invoice(
         title="⭐ Оплата подарка",
-        description=f"Оплати 10⭐ и выбери подарок!",
-        payload="gift_pay",
+        description=f"Оплати 10⭐ и подарок скоро прилетит на акк!",
+        payload="gift_pay_bear",
         currency="XTR",
-        prices=[LabeledPrice(label="Подарок 💝/🧸", amount=GIFT_COST)]
+        
+        prices=[LabeledPrice(label="Подарок 🧸", amount=GIFT_COST)]
+    )
+    await callback.answer()
+
+@router.callback_query(F.data == "heart_gift")
+async def pay_gifts_handler(callback: CallbackQuery):
+    await callback.message.answer_invoice(
+        title="⭐ Оплата подарка",
+        description=f"Оплати 10⭐ и подарок скоро прилетит на акк!",
+        payload="gift_pay_bear",
+        currency="XTR",
+        
+        prices=[LabeledPrice(label="Подарок 💝", amount=GIFT_COST)]
     )
     await callback.answer()
 
@@ -503,38 +516,24 @@ async def pre_checkout_handler(pre_checkout_query: PreCheckoutQuery):
     await pre_checkout_query.answer(ok=True)
 
 @router.message(F.successful_payment)
-async def successful_payment_handler(message: Message):
+async def successful_payment(message: Message):
     user_id = message.from_user.id
     payload = message.successful_payment.invoice_payload
-    amount = message.successful_payment.total_amount
     
-    if payload == "gift_pay":
-        db.update_spent(user_id, amount)
-        
-        prize = spin_lottery()
-        
-        if prize:
-            db.add_lottery_win(user_id, prize["name"])
-            
-            await message.answer(
-                f"🍀 Удача!\n\n"
-                f"🎉 Поздравляем! Вы выиграли: {prize['name']}\n\n"
-                f"⏳ Дождитесь администрацию для получения приза!\n"
-                f"📩 Мы свяжемся с вами в ближайшее время.",
-                reply_markup=get_back_keyboard()
-            )
-        else:
-            await message.answer(
-                "❌ Не удача!\n\n"
-                "😔 К сожалению, в этот раз не повезло...\n"
-                "🍀 Попробуй ещё раз!",
-                reply_markup=get_lottery_keyboard()
-            )
+    
+    if payload == "gift_pay_bear":
+        gift_name = "Мишка"
+        db.update_gift_info(user_id, gift_name)
+
+    if payload == "gift_pay_bear":
+        gift_name = "Сердце"
+        db.update_gift_info(user_id, gift_name)
+
+    await message.answer("Успешно, скоро подарок прийдёт на ваш аккаунт. Ожидайте!", reply_markup=get_back_keyboard())
 
 
-@router.callback_query(F.data == "bear_gift")
-async def gifts_for_10(callback: CallbackQuery, message: types.Message):
-    await message.reply(f"")
+
+
 
 # --- Команда /start ---
 @router.message(CommandStart())
