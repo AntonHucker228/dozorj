@@ -356,6 +356,8 @@ def get_back_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="🔙 Вернуться в главное меню", callback_data="main_menu")]
     ])
 
+def xh
+
 # ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 
 async def check_subscription(bot: Bot, user_id: int) -> bool:
@@ -449,7 +451,9 @@ user_referrers = {}
 
 @router.callback_query(F.data == "for_10")
 async def gifts_for_10(callback: CallbackQuery, message: types.Message):
-    async with sqlite3.connect()
+    user = db.get_user(user_id)
+    username = db.get_user(user_name)
+    message.edit_message("Отлично! Выберите подарок:", markup=)
 
 # --- Команда /start ---
 @router.message(CommandStart())
