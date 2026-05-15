@@ -21,8 +21,7 @@ BOT_TOKEN = "8553213516:AAE71Ddi650C-LEBUwvHKzYTgaZAnsLK12I"
 
 # Каналы для подписки
 CHANNELS = [
-    {"name": "hhuydzaa", "url": "https://t.me/hhuydzaa", "id": "@hhuydzaa"},
-    {"name": "SmartSentinel", "url": "https://t.me/SmartSentinel", "id": "@SmartSentinel"},
+    {"name": "Telegram contests", "url": "https://https://t.me/NFT_news_dzr", "id": "@NFT_news_dzr"}
 ]
 
 # Подарки в магазине
