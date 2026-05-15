@@ -480,7 +480,7 @@ user_referrers = {}
 @router.callback_query(F.data == "for_10")
 async def gifts_for_10(callback: CallbackQuery):
 
-    await Message.edit_message("Здесь вы можете приобрести подарки 🧸/💝 всего за 10 звезд⭐\n\nВыберите подарок, а затем проведите оплату!", reply_markup=choise_gift())
+    await callback_query.message.edit_text("Здесь вы можете приобрести подарки 🧸/💝 всего за 10 звезд⭐\n\nВыберите подарок, а затем проведите оплату!", reply_markup=choise_gift())
     
 
 @router.callback_query(F.data == "bear_gift")
@@ -513,7 +513,7 @@ async def pre_checkout_handler(pre_checkout_query: PreCheckoutQuery):
     await pre_checkout_query.answer(ok=True)
 
 @router.message(F.successful_payment)
-async def successful_payment(message: Message):
+async def successful_payment(callback: CallbackQuery):
     user_id = message.from_user.id
     payload = message.successful_payment.invoice_payload
     
@@ -526,7 +526,7 @@ async def successful_payment(message: Message):
         gift_name = "Сердце"
         db.update_gift_info(user_id, gift_name)
 
-    await message.answer("Успешно, скоро подарок прийдёт на ваш аккаунт. Ожидайте!", reply_markup=get_back_keyboard())
+    await callback_query.message.edit_text("Успешно, скоро подарок прийдёт на ваш аккаунт. Ожидайте!", reply_markup=get_back_keyboard())
 
 
 
